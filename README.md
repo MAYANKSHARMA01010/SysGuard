@@ -254,6 +254,21 @@ tests/
 
 ---
 
+## Documentation & AI Development History
+
+Comprehensive documentation and transcripts are available in the [`docs/`](docs/) directory:
+
+- 📖 [**SysGuard Documentation Master Guide**](docs/README.md)
+- 📜 [**Complete AI Pair Programming & Chat History**](docs/CHAT_HISTORY.md)
+  - Full transcript of **ChatGPT** ideation & problem statement selection ([ChatGPT Share Link](https://chatgpt.com/share/6aaf77a3-8948-83ee-806c-0f3ea63b12fa))
+  - Full transcript of **Google Antigravity** implementation, macOS native pivot, interactive TUI, and refactoring
+- 💻 [**CLI Commands Reference**](docs/cli-reference.md)
+- 🍏 [**macOS Native Security Auditor**](docs/macos.md)
+- 🪟 [**Windows Agent-less Auditor**](docs/windows.md)
+- 📦 [**Commit Guide**](docs/COMMIT_GUIDE.md)
+
+---
+
 ## License
 
 MIT — Copyright (c) 2026 Mayank Sharma

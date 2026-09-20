@@ -27,6 +27,7 @@ SysGuard is designed to deliver immediate, actionable security audits across **m
   - [Windows Agent-less Auditing](#windows-agent-less-auditing)
 - [9. Demo Mode (Simulation)](#9-demo-mode-simulation)
 - [10. Troubleshooting](#10-troubleshooting)
+- [11. Complete AI Development & Chat History (ChatGPT + Antigravity)](CHAT_HISTORY.md)
 
 ---
 
