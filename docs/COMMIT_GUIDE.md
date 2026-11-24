@@ -1,5 +1,7 @@
 # SysGuard Staged Commit Guide
 
+> Historical development workflow for the terminal-based macOS application. Windows is untested. The referenced `scripts/` directory is Git-ignored and may be absent from a fresh clone.
+
 This guide explains how [`scripts/commit.sh`](../scripts/commit.sh) stages and commits the SysGuard codebase in **6 realistic, logical phases** spaced **35 minutes apart**, starting from Friday after 9:00 PM.
 
 ---

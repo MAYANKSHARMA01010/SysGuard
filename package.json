@@ -1,7 +1,7 @@
 {
   "name": "sysguard",
   "version": "1.0.0",
-  "description": "Agent-less macOS Security Vulnerability & Network Scanner",
+  "description": "Terminal-based macOS security and network auditing application",
   "type": "module",
   "bin": {
     "sysguard": "./dist/cli/index.js",
@@ -23,8 +23,6 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "scan": "npm run dev -- scan",
-    "scan:demo": "npm run dev -- scan --demo",
-    "report:demo": "npm run dev -- report --demo",
     "doctor": "npm run dev -- doctor"
   },
   "keywords": [
@@ -32,7 +30,7 @@
     "audit",
     "vulnerability",
     "network",
-    "windows",
+    "macos",
     "scanner",
     "cli",
     "sysguard"

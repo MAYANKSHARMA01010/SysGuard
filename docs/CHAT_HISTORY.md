@@ -5,10 +5,12 @@
 > **Author**: Mayank Sharma
 > **Repository**: [https://github.com/MAYANKSHARMA01010/SysGuard](https://github.com/MAYANKSHARMA01010/SysGuard)
 > **ChatGPT Share Link**: [https://chatgpt.com/share/6aaf77a3-8948-83ee-806c-0f3ea63b12fa](https://chatgpt.com/share/6aaf77a3-8948-83ee-806c-0f3ea63b12fa)
-> **Primary Platforms**: macOS (Native Live Auditing) | Windows (Isolated Agent-less Architecture)
+> **Current Platform**: Terminal-based macOS application; Windows untested
 > **Date / Timeline**: September 18 – September 20, 2026
 
 ---
+
+> **Historical archive:** The conversations below preserve earlier plans and implementation claims. They are not a current feature or compatibility reference. SysGuard is now a terminal-based macOS application; Windows has not been tested. References to Windows support, demo mode, HTML/PDF reporting, and CVE crawling may be superseded. See the [current README](../README.md) and [CLI reference](cli-reference.md).
 
 ## Executive Summary
 

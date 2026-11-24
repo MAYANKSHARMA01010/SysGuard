@@ -1,6 +1,8 @@
 # SysGuard — macOS Security & Network Auditing
 
-SysGuard provides native, agent-less auditing for macOS systems (both Apple Silicon `arm64` and Intel `x64`). It interacts directly with built-in Apple security subsystems using standard system command-line interfaces.
+SysGuard is a terminal-based macOS application with an interactive TUI, static terminal tables, and JSON export. It queries built-in Apple security subsystems using native command-line utilities. The code targets Apple Silicon `arm64` and Intel `x64`; a complete version/architecture test matrix has not been established. Windows has not been tested and is not a supported release target.
+
+For installation and usage, see the [README](../README.md) and [CLI reference](cli-reference.md).
 
 ---
 
@@ -79,7 +81,7 @@ SysGuard parses network configuration using:
 - `ifconfig`: Network interfaces (`en0`, `lo0`), MAC addresses, and active IPv4/IPv6 assignments.
 - `arp -an`: Local subnet neighbors and hardware MAC addresses.
 
-From this telemetry, SysGuard automatically formulates an interactive **Mermaid.js** graph:
+From this telemetry, SysGuard formulates structured topology data and Mermaid diagram text included in JSON reports:
 - Maps host interfaces to local subnets
 - Groups discovered neighbors under subnets
 - Highlights exposed listening ports and processes
@@ -88,10 +90,12 @@ From this telemetry, SysGuard automatically formulates an interactive **Mermaid.
 
 ## Permission Guidance
 
-| Command | Standard User | With `sudo` |
-|---|---|---|
-| `sysguard doctor` | Complete | Complete |
-| `sysguard scan` | Complete (inspects user sockets) | Full (inspects system/root daemon sockets) |
-| `sysguard report` | Complete | Complete |
-| `sysguard security` | Complete | Complete |
-| `sysguard network` | User-owned sockets & interfaces | All system daemon sockets |
+Start with a standard user account. System-owned sockets and protected files may be unavailable depending on macOS permissions and privacy controls. Elevated privileges may expose more data but do not guarantee complete collection. `doctor` checks selected utilities; review its warnings and unavailable audit data.
+
+Security settings are inspected rather than changed automatically. Remediation commands above are advice for manual review, not commands executed by the scanner.
+
+Reports can include usernames, file metadata, network details, and process environment variable values. The current environment collection does not automatically redact credentials.
+
+## Launch Persistence
+
+The system collector catalogs `.plist` files from `/Library/LaunchDaemons`, `/Library/LaunchAgents`, and `~/Library/LaunchAgents`. The `mac-launch-persistence` rule evaluates the collected startup items. This is an inventory and rule-based review, not proof that a listed item is malicious.

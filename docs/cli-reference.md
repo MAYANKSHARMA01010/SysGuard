@@ -1,141 +1,91 @@
-# SysGuard CLI Reference Manual
+# SysGuard CLI Reference
 
-This document provides a technical reference for every command, flag, option, exit code, and configuration parameter in the SysGuard CLI.
+SysGuard is a terminal-based macOS application. Windows is untested and is not a supported release target; Linux auditing is not supported.
 
----
-
-## Global CLI Syntax
+## Syntax
 
 ```bash
-sysguard [command] [options]
+sysguard [options] [command]
 ```
 
-### Global Options
+`guard` is an alias when the package is linked. Without linking, use `node dist/cli/index.js` or `npm run dev --` in place of `sysguard`.
 
-| Option | Type | Description |
-|---|---|---|
-| `-V`, `--version` | Flag | Output the version number of SysGuard |
-| `-h`, `--help` | Flag | Display help for command |
+Running `sysguard` without a command opens the interactive checklist when stdout is a terminal. Otherwise it prints command guidance. Use `sysguard --help` for the registered command list.
 
----
+Global options: `-V` / `--version`, `-h` / `--help`, and `--verbose` for debug output. Place the global verbose option before the command: `sysguard --verbose scan --no-interactive`.
 
-## Commands
+## `scan`
 
-### `scan`
-Runs a full security, vulnerability, and network exposure audit.
+Runs a macOS security and network audit.
 
 ```bash
 sysguard scan [options]
 ```
 
-#### Options:
-- `--format <format>`:
-  - Values: `table` (default), `json`, `html`, `pdf`
-  - When set to `table` in a terminal (TTY), launches the interactive TUI dashboard.
-  - When set to `json`, outputs normalized JSON to stdout or file.
-  - When set to `html` or `pdf`, compiles the corresponding document.
-- `--output <file>`:
-  - Destination file path to save the generated report.
-  - Automatically creates parent directories if they do not exist.
-- `--modules <list>`:
-  - Comma-separated list of modules to execute.
-  - Supported modules: `system`, `security`, `network`.
-  - Default: `system,security,network`.
-- `--no-crawl`:
-  - Disables the online CISA KEV (Known Exploited Vulnerabilities) feed crawler.
-  - SysGuard will use its built-in offline CVE database.
-- `--no-interactive`:
-  - Disables the interactive terminal dashboard when `--format table` is used.
-  - Prints static ANSI tables instead.
-- `--demo`:
-  - Runs with simulated Windows 11 Enterprise telemetry.
-  - Useful for testing Windows auditing workflows on macOS or Linux.
-- `--verbose`:
-  - Enables detailed diagnostic logging.
+| Option | Behavior | Default |
+|---|---|---|
+| `--format <format>` | `table` or `json` | `table` |
+| `--output <file>` | Write JSON to a file; create parent directories | No file |
+| `--modules <list>` | Comma-separated `system,security,network` | All three |
+| `--no-interactive` | Print static terminal tables | Interactive in a TTY |
+| `--verbose` | Accepted scan option; prefer the global option above for debug logging | Off |
 
----
+With table format, no output file, and a terminal session, `scan` opens the checklist. To use `--modules` directly, pass `--no-interactive`. System information is always collected, even if omitted from `--modules`.
 
-### `doctor`
-Performs an environment health check, testing permissions, Node.js version, and presence of all required native binaries.
+```bash
+sysguard scan --no-interactive --modules system,network
+sysguard scan --format json --output reports/scan.json
+```
+
+Specifying `--output` writes JSON even with the default table format. JSON printed to stdout is accompanied by scan logging, so use a file for machine processing.
+
+The active CLI does not provide `--demo`, `--no-crawl`, HTML export, or PDF export.
+
+## `report`
+
+Runs a fresh audit of all modules and exports one JSON file.
+
+```bash
+sysguard report --output reports --name macos-audit
+```
+
+| Option | Description | Default |
+|---|---|---|
+| `--output <dir>` | Destination directory, created as needed | `reports` |
+| `--name <name>` | Base filename, without extension | `sysguard-report` |
+
+The example writes `reports/macos-audit.json`. No HTML or PDF bundle is generated.
+
+## Inspection commands
+
+| Command | Output |
+|---|---|
+| `sysguard system` | System information in terminal tables |
+| `sysguard security` | macOS security controls and findings in terminal tables |
+| `sysguard network` | Interfaces, sockets, neighbors, and related network data in terminal tables |
+| `sysguard findings` | Findings from a fresh full scan, excluding NOT_APPLICABLE results |
+| `sysguard findings --format json` | Findings array printed to stdout, accompanied by scan logging |
+
+System information is also collected when running security or network commands.
+
+## `doctor`
 
 ```bash
 sysguard doctor
 ```
 
-#### Exit Codes:
-- `0`: All system checks passed; ready to scan.
-- `1`: One or more critical checks failed (e.g. Node.js < 18).
+Checks the Node.js version, platform, permissions, and selected native utilities. Start with a standard user account; permissions may limit available data.
 
----
+Individual failed checks print warnings but currently do not set a nonzero exit code. Legacy Windows diagnostics are not evidence of tested Windows support.
 
-### `report`
-Executes an audit and compiles all three report formats simultaneously (`.html`, `.pdf`, and `.json`).
+## Interactive controls
 
-```bash
-sysguard report [options]
-```
+Checklist: ↑/↓ moves, Space toggles, A selects all, D deselects all, Enter runs, and Q / Ctrl+C exits. Checklist choices enable the associated modules.
 
-#### Options:
-- `--output <dir>`: Destination folder for exported reports (Default: `./reports`).
-- `--name <name>`: Base filename for the exported bundle (Default: `sysguard-report`).
-- `--demo`: Generate reports from simulated Windows 11 telemetry.
+Dashboard: Tab, ←/→, or 1–3 switches views; ↑/↓ selects findings; Enter shows details; F cycles filters; R rescans; E exports `reports/sysguard-report.json`; B returns to the checklist when available; Q / Ctrl+C exits.
 
----
+## Exit behavior and configuration
 
-### `system`
-Runs only the system information module.
+Normal completion returns 0. Unhandled CLI errors and explicit scan/report failures return 1. Findings with FAIL status do not themselves cause a nonzero exit code. Native utility failures can instead result in partial data; exit status alone does not establish a complete audit.
 
-```bash
-sysguard system
-```
-Outputs OS platform, architecture, hardware CPU brand, physical memory, uptime, and cataloged software packages.
-
----
-
-### `security`
-Runs only the security controls module.
-
-```bash
-sysguard security
-```
-Evaluates core OS defensive controls (SIP, FileVault, Gatekeeper, Firewall, Defender, UAC, Secure Boot, etc.) and lists all findings.
-
----
-
-### `network`
-Runs only the network exposure module.
-
-```bash
-sysguard network
-```
-Lists active interfaces, IP configurations, listening ports, process owners, and discovered ARP neighbors.
-
----
-
-### `findings`
-Displays evaluated security findings.
-
-```bash
-sysguard findings
-```
-Filters and displays all PASS, WARN, and FAIL findings with severity levels and remediation advice.
-
----
-
-## Exit Codes
-
-| Code | Meaning |
-|---|---|
-| `0` | Audit completed successfully. |
-| `1` | General error (invalid arguments, scan failure, or permission error). |
-| `127` | Command or binary not found in system `$PATH`. |
-
----
-
-## Environment Variables
-
-| Variable | Description |
-|---|---|
-| `SYSGUARD_OFFLINE` | Set to `1` or `true` to force offline mode (equivalent to `--no-crawl`). |
-| `SYSGUARD_LOG_LEVEL` | Logging level: `debug`, `info`, `warn`, `error` (Default: `info`). |
-| `NODE_ENV` | Environment mode (`development` or `production`). |
+There are no implemented `SYSGUARD_OFFLINE` or `SYSGUARD_LOG_LEVEL` environment settings. Use the global `--verbose` flag for debug output.
