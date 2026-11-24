@@ -4,7 +4,7 @@
 
 SysGuard is a read-only CLI application with an interactive Terminal User Interface (TUI). It uses built-in macOS commands to inspect system information, security settings, and local network exposure without installing a persistent agent or background service.
 
-**Platform status:** macOS is the current target platform. Windows has not been tested and is not a supported release target. Earlier Windows prototypes and development plans do not establish Windows compatibility. Linux auditing is not supported.
+**Platform status:** macOS is the current target platform. Windows has not been tested and is not a supported release target. Linux auditing is not supported.
 
 ## Features
 
@@ -14,8 +14,6 @@ SysGuard is a read-only CLI application with an interactive Terminal User Interf
 - Network interfaces, TCP listening and established connections, UDP endpoints, ARP neighbors, DNS configuration, and sharing information.
 - Network topology data, security findings, remediation guidance, and a posture score.
 - Static terminal tables and JSON report export.
-
-HTML/PDF reports, Windows demo mode, and the CVE/online exploit crawler described in older material are not part of the active application.
 
 ## Requirements and installation
 
@@ -88,14 +86,32 @@ npm test
 
 Local tests use Vitest. The `tests/` directory is currently ignored by Git, so it may be absent from a fresh clone. Unit tests are not evidence of Windows support or a complete macOS compatibility matrix.
 
+## Architecture
+
+```text
+src/
+  cli/         Commands, interactive checklist/dashboard, terminal formatting
+  core/        Scanner, orchestrator, native command runner, permissions, topology
+  collectors/  macOS system, security, and network collection
+  parsers/     Native command output to structured data
+  rules/       Security rules and posture scoring
+  reporters/   Terminal tables and JSON export
+  types/       TypeScript types and Zod schemas
+  utils/       Logging, dates, formatting, and errors
+```
+
+## Data and result limits
+
+Reports include local system details, usernames, file metadata, network information, and process environment variable values. Environment values are not automatically redacted.
+
+The posture score starts at 100 and deducts points for FAIL findings by severity, bounded to 0–100. Higher scores mean fewer scored failures. Missing data and WARN findings do not reduce the score, so review individual findings and collection warnings alongside it.
+
+The scanner observes settings and provides remediation advice; it does not apply fixes. It exports JSON reports and topology diagram text. HTML/PDF export, CVE feed crawling, and Windows demo mode are unavailable.
+
 ## Documentation
 
-- [User and developer guide](docs/README.md)
-- [CLI reference](docs/cli-reference.md)
-- [macOS auditing details](docs/macos.md)
-- [Windows status: untested](docs/windows.md)
-- [Historical development transcript](docs/CHAT_HISTORY.md) — includes superseded plans and feature claims.
-- [Historical commit guide](docs/COMMIT_GUIDE.md)
+- [CLI reference](docs/cli-reference.md): commands, options, keyboard controls, and exit behavior.
+- [macOS audit guide](docs/macos.md): native data sources, rule coverage, and collection limits.
 
 ## License
 

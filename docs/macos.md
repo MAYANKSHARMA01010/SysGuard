@@ -1,101 +1,58 @@
-# SysGuard — macOS Security & Network Auditing
+# macOS Audit Guide
 
-SysGuard is a terminal-based macOS application with an interactive TUI, static terminal tables, and JSON export. It queries built-in Apple security subsystems using native command-line utilities. The code targets Apple Silicon `arm64` and Intel `x64`; a complete version/architecture test matrix has not been established. Windows has not been tested and is not a supported release target.
+SysGuard runs in the macOS terminal. See the [README](../README.md) for installation and the [CLI reference](cli-reference.md) for commands and keyboard controls.
 
-For installation and usage, see the [README](../README.md) and [CLI reference](cli-reference.md).
+## Security checks
 
----
+The active rule engine evaluates these nine checks using native macOS data:
 
-## Native Security Controls Audited
+| Check | Data source | Severity |
+|---|---|---|
+| System Integrity Protection | `csrutil status` | CRITICAL |
+| FileVault encryption | `fdesetup status` | HIGH |
+| Gatekeeper assessment | `spctl --status` | HIGH |
+| Application Firewall | `socketfilterfw --getglobalstate` | HIGH |
+| Firewall stealth mode | `socketfilterfw --getstealthmode` | MEDIUM |
+| Administrator accounts | `dscl . -read /Groups/admin GroupMembership` | MEDIUM |
+| Listening services | `lsof -nP -iTCP -sTCP:LISTEN` | HIGH |
+| Automatic update checking | `defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled` | MEDIUM |
+| Launch persistence inventory | `.plist` filenames in LaunchDaemon/LaunchAgent directories | MEDIUM |
 
-SysGuard evaluates the following critical macOS defensive controls:
+`socketfilterfw` is invoked using its full path, `/usr/libexec/ApplicationFirewall/socketfilterfw`. The collector also reads its per-application rules with `--listapps`.
 
-### 1. System Integrity Protection (SIP / rootless)
-- **What it is**: Apple kernel-level protection preventing unauthorized modification of protected files, directories, and running processes (even by `root`).
-- **Command queried**: `csrutil status`
-- **Rule**: `mac-sip-status` (`CRITICAL`)
-- **Remediation if FAIL**: Boot into macOS Recovery mode (hold power button on Apple Silicon), open Terminal, and run:
-  ```bash
-  csrutil enable
-  ```
+The administrator rule warns when there are more than two non-root administrators. The listening-service rule warns about ports 21, 23, 80, 5900, and 22 bound to `0.0.0.0` or `*`; it does not determine whether the services are reachable from outside the host. The update check reads the automatic-checking preference rather than verifying installed patches. The persistence rule catalogs startup items and returns an informational PASS; it does not detect malware.
 
-### 2. FileVault 2 Full Disk Encryption
-- **What it is**: XTS-AES-128 volume encryption protecting stored data from offline extraction if the machine is lost or stolen.
-- **Command queried**: `fdesetup status`
-- **Rule**: `mac-filevault-encryption` (`HIGH`)
-- **Remediation if FAIL**: Enable FileVault via System Settings ➔ Privacy & Security ➔ FileVault, or via terminal:
-  ```bash
-  sudo fdesetup enable
-  ```
+Review findings and remediation advice in the dashboard or exported JSON. SysGuard does not execute the suggested fixes.
 
-### 3. Gatekeeper App Assessment Subsystem
-- **What it is**: macOS verification system enforcing code-signing, developer identity verification, and notarization checks before binaries can execute.
-- **Command queried**: `spctl --status`
-- **Rule**: `mac-gatekeeper-assessment` (`HIGH`)
-- **Remediation if FAIL**: Re-enable Gatekeeper enforcement:
-  ```bash
-  sudo spctl --master-enable
-  ```
+## System inventory
 
-### 4. macOS Application Firewall (ALF)
-- **What it is**: Built-in socket filter firewall controlling inbound connections on a per-application and per-port basis.
-- **Command queried**: `/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate`
-- **Rule**: `mac-application-firewall` (`HIGH`)
-- **Remediation if FAIL**: Enable Application Firewall:
-  ```bash
-  sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
-  ```
+The system collector reads OS version, CPU, memory, boot time, computer name, and local accounts using `sw_vers`, `sysctl`, `scutil`, and `dscl`. It also collects:
 
-### 5. Firewall Stealth Mode
-- **What it is**: Prevents the computer from responding to unsolicited probing requests (like ICMP pings and port scans).
-- **Command queried**: `/usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode`
-- **Rule**: `mac-firewall-stealth-mode` (`MEDIUM`)
-- **Remediation if WARN**: Turn on stealth mode:
-  ```bash
-  sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
-  ```
+- Startup `.plist` filenames from `/Library/LaunchDaemons`, `/Library/LaunchAgents`, and `~/Library/LaunchAgents`.
+- Metadata for up to 40 entries per folder in Downloads, Documents, and Desktop.
+- Process environment variable names and values.
+- PATH directories and their world-writable permission bits.
 
-### 6. Local Administrator Privileges Audit
-- **What it is**: Audits the Directory Services admin group (`/Groups/admin`) to detect account proliferation.
-- **Command queried**: `dscl . -read /Groups/admin GroupMembership`
-- **Rule**: `mac-admin-accounts` (`MEDIUM`)
-- **Remediation if WARN**: Demote non-essential admin accounts in System Settings ➔ Users & Groups.
+Folder metadata and writable-bit checks are limited inventories, not comprehensive file or permission audits. Environment values are exported without automatic credential redaction.
 
-### 7. Listening Ports & Sockets Audit
-- **What it is**: Scans all active TCP listening sockets, correlating local binding addresses (`127.0.0.1` vs `0.0.0.0`) with process names and PIDs.
-- **Command queried**: `lsof -nP -iTCP -sTCP:LISTEN`
-- **Rule**: `mac-listening-ports` (`HIGH`)
-- **Remediation if WARN**: Close insecure or unencrypted listening services (FTP, Telnet, VNC, HTTP) or restrict bindings to localhost.
+## Network collection
 
-### 8. Automatic Security Updates
-- **What it is**: Checks whether automatic security patch checks and downloads are enabled.
-- **Command queried**: `defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled`
-- **Rule**: `mac-auto-updates` (`MEDIUM`)
-- **Remediation if WARN**: Enable automatic updates in System Settings ➔ General ➔ Software Update.
+| Command | Data collected |
+|---|---|
+| `lsof -nP -iTCP -sTCP:LISTEN` | TCP listening sockets and associated processes |
+| `lsof -nP -iTCP -sTCP:ESTABLISHED` | Established TCP connections |
+| `lsof -nP -iUDP` | UDP endpoints |
+| `ifconfig` | Interfaces and addresses |
+| `arp -an` | Cached IPv4 neighbors |
+| `scutil --dns` | DNS configuration |
+| `sharing -l` | Local sharing configuration |
 
----
+Topology output includes counts and Mermaid diagram text in JSON. The diagram groups IPv4 addresses using an assumed `/24` subnet rather than the actual interface mask, and shows a limited selection of shares, ports, and cached neighbors. It is an approximate view of collected local data, not a complete network discovery scan or verified VLAN map.
 
-## Network Topology & Exposure Formulation
+## Permissions and interpretation
 
-SysGuard parses network configuration using:
-- `ifconfig`: Network interfaces (`en0`, `lo0`), MAC addresses, and active IPv4/IPv6 assignments.
-- `arp -an`: Local subnet neighbors and hardware MAC addresses.
+Start as a standard user and run `sysguard doctor` to check selected native utilities. System-owned sockets and protected files may be unavailable depending on macOS permissions and privacy controls. Elevated privileges may expose more data but do not guarantee complete collection.
 
-From this telemetry, SysGuard formulates structured topology data and Mermaid diagram text included in JSON reports:
-- Maps host interfaces to local subnets
-- Groups discovered neighbors under subnets
-- Highlights exposed listening ports and processes
+Missing commands, unreadable directories, and failed queries can produce empty or partial data. Some rules default missing data to empty lists; a PASS or high posture score therefore does not prove that every data source was successfully inspected. Review diagnostic warnings and evidence.
 
----
-
-## Permission Guidance
-
-Start with a standard user account. System-owned sockets and protected files may be unavailable depending on macOS permissions and privacy controls. Elevated privileges may expose more data but do not guarantee complete collection. `doctor` checks selected utilities; review its warnings and unavailable audit data.
-
-Security settings are inspected rather than changed automatically. Remediation commands above are advice for manual review, not commands executed by the scanner.
-
-Reports can include usernames, file metadata, network details, and process environment variable values. The current environment collection does not automatically redact credentials.
-
-## Launch Persistence
-
-The system collector catalogs `.plist` files from `/Library/LaunchDaemons`, `/Library/LaunchAgents`, and `~/Library/LaunchAgents`. The `mac-launch-persistence` rule evaluates the collected startup items. This is an inventory and rule-based review, not proof that a listed item is malicious.
+The code targets native macOS utilities on Apple Silicon and Intel; a complete macOS version/architecture compatibility matrix has not been established. Windows remains untested, and Linux auditing is unsupported.
